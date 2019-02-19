@@ -113,3 +113,22 @@ all_data_available <- rbind(sub_glop, sub_reich, sub_brot, sub_bien)
 
 taxonlist <- as.character(unique(all_data_available$taxa))
 taxonlist <- lookup_table(taxonlist, by_species = TRUE)
+
+## visualizing species sample spread 
+library(ggplot2)
+ggplot(data = taxonlist, aes(x = group, fill = order)) + geom_histogram(stat = "count") + theme_minimal() + xlab("Group") + ylab("Number of Species")
+ggplot(data = taxonlist, aes(x = family, fill = family)) + geom_histogram(stat = "count") + theme_minimal() + theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(),) 
+
+
+## getting other traits
+all_data_available$taxa <- as.character(all_data_available$taxa)
+traits <- BIEN_trait_list()
+traits <- traits$trait_name
+traits <- as.character(traits)
+
+ll <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = traits)
+ll_a <- ll %>% filter(ll$trait_name == "leaf life span")
+ll_a$scrubbed_species_binomial <- as_factor(ll_a$scrubbed_species_binomial)
+## trait value needs to be numeric
+ll_a$trait_value <- as.numeric(ll_a$trait_value)
+
