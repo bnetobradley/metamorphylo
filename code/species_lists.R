@@ -114,6 +114,7 @@ all_data_available <- rbind(sub_glop, sub_reich, sub_brot, sub_bien)
 taxonlist <- as.character(unique(all_data_available$taxa))
 taxonlist <- lookup_table(taxonlist, by_species = TRUE)
 
+woody_taxa <- lookup_table(unique(woody_only$scrubbed_species_binomial), by_species = TRUE )
 ## visualizing species sample spread 
 library(ggplot2)
 ggplot(data = taxonlist, aes(x = group, fill = order)) + geom_histogram(stat = "count") + theme_minimal() + xlab("Group") + ylab("Number of Species")
@@ -126,9 +127,24 @@ traits <- BIEN_trait_list()
 traits <- traits$trait_name
 traits <- as.character(traits)
 
-ll <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = traits)
-ll_a <- ll %>% filter(ll$trait_name == "leaf life span")
-ll_a$scrubbed_species_binomial <- as_factor(ll_a$scrubbed_species_binomial)
-## trait value needs to be numeric
-ll_a$trait_value <- as.numeric(ll_a$trait_value)
+## no data for our taxa on this 
+## min_l_width <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = "minimum leaf width")
 
+l_area <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = "leaf area")
+l_area$trait_value <- as.numeric(l_area$trait_value)
+l_area$scrubbed_species_binomial <- as.factor(l_area$scrubbed_species_binomial)
+l_area <- l_area %>% group_by(scrubbed_species_binomial) %>% dplyr::summarise(mean(trait_value))
+l_area$lookup <- lookup_table(as.character(l_area$scrubbed_species_binomial), by_species = TRUE)
+ggplot(data = l_area, aes(x=l_area$`mean(trait_value)`, fill = lookup[,4])) + geom_histogram(binwidth = 5000) + theme_minimal() + xlab("Leaf Area (mm^2)") + ylab("Number of Species") + labs(fill = "Group")  + scale_fill_manual(values=c("#56BB76", "#0A2446", "#39745F"))
+
+
+l_lifespan <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = "leaf life span")
+l_lifespan$trait_value <- as.numeric(l_lifespan$trait_value)
+l_lifespan <- l_lifespan %>% group_by(scrubbed_species_binomial) %>% dplyr::summarise(mean(trait_value))
+l_lifespan$lookup <- lookup_table(as.character(l_lifespan$scrubbed_species_binomial), by_species = TRUE)
+ggplot(data = l_lifespan, aes(x=l_lifespan$`mean(trait_value)`, fill = lookup[,4])) + geom_histogram(binwidth = 12) + theme_minimal() + xlab("Leaf Lifespan (months)") + ylab("Number of Species") + labs(fill = "Group")  + scale_fill_manual(values=c("#56BB76", "#0A2446", "#39745F"))
+
+l_woody <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = "whole plant woodiness")
+l_woody <- l_woody %>% group_by(scrubbed_species_binomial) %>% dplyr::summarise(first(trait_value))
+l_woody$lookup <- lookup_table(as.character(l_woody$scrubbed_species_binomial), by_species = TRUE)
+ggplot(data = l_woody, aes(x=l_woody$`first(trait_value)`, fill = lookup[,4])) + geom_bar() + theme_minimal() + xlab("Plant Woodiness") + ylab("Number of Species") + labs(fill = "Group") + scale_fill_manual(values=c("#56BB76", "#0A2446", "#39745F"))
