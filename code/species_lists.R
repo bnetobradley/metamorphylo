@@ -117,9 +117,14 @@ taxonlist <- lookup_table(taxonlist, by_species = TRUE)
 woody_taxa <- lookup_table(unique(woody_only$scrubbed_species_binomial), by_species = TRUE )
 ## visualizing species sample spread 
 library(ggplot2)
+dev.off()
+jpeg("hist_order_tax.jpeg")
 ggplot(data = taxonlist, aes(x = group, fill = order)) + geom_histogram(stat = "count") + theme_minimal() + xlab("Group") + ylab("Number of Species")
-ggplot(data = taxonlist, aes(x = family, fill = family)) + geom_histogram(stat = "count") + theme_minimal() + theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(),) 
+dev.off()
 
+jpeg("hist_family_tax.jpeg")
+ggplot(data = taxonlist, aes(x = family, fill = family)) + geom_histogram(stat = "count") + theme_minimal() + theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(),) 
+dev.off()
 
 ## getting other traits
 all_data_available$taxa <- as.character(all_data_available$taxa)
@@ -136,21 +141,29 @@ l_area$trait_value <- as.numeric(l_area$trait_value)
 l_area$scrubbed_species_binomial <- as.factor(l_area$scrubbed_species_binomial)
 l_area <- l_area %>% group_by(scrubbed_species_binomial) %>% dplyr::summarise(mean(trait_value))
 l_area$lookup <- lookup_table(as.character(l_area$scrubbed_species_binomial), by_species = TRUE)
+
+jpeg("hist_larea.jpeg")
 ggplot(data = l_area, aes(x=l_area$`mean(trait_value)`, fill = lookup[,4])) + geom_histogram(binwidth = 5000) + theme_minimal() + xlab("Leaf Area (mm^2)") + ylab("Number of Species") + labs(fill = "Group")  + scale_fill_manual(values=c("#56BB76", "#0A2446", "#b25976"))
+dev.off()
 
 ## histogram of leaf lifespan by taxa plot
 l_lifespan <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = "leaf life span")
 l_lifespan$trait_value <- as.numeric(l_lifespan$trait_value)
 l_lifespan <- l_lifespan %>% group_by(scrubbed_species_binomial) %>% dplyr::summarise(mean(trait_value))
 l_lifespan$lookup <- lookup_table(as.character(l_lifespan$scrubbed_species_binomial), by_species = TRUE)
+
+jpeg("hist_lifespan.jpeg")
 ggplot(data = l_lifespan, aes(x=l_lifespan$`mean(trait_value)`, fill = lookup[,4])) + geom_histogram(binwidth = 12) + theme_minimal() + xlab("Leaf Lifespan (months)") + ylab("Number of Species") + labs(fill = "Group")  + scale_fill_manual(values=c("#56BB76", "#0A2446", "#b25976"))
+dev.off()
 
 ## # of woody plants by taxa plot
 l_woody <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = "whole plant woodiness")
 l_woody <- l_woody %>% group_by(scrubbed_species_binomial) %>% dplyr::summarise(first(trait_value))
 l_woody$lookup <- lookup_table(as.character(l_woody$scrubbed_species_binomial), by_species = TRUE)
-ggplot(data = l_woody, aes(x=l_woody$`first(trait_value)`, fill = lookup[,4])) + geom_bar() + theme_minimal() + xlab("Plant Woodiness") + ylab("Number of Species") + labs(fill = "Group") + scale_fill_manual(values=c("#56BB76", "#0A2446", "#b25976"))
 
+jpeg("hist_woodiness.jpeg")
+ggplot(data = l_woody, aes(x=l_woody$`first(trait_value)`, fill = lookup[,4])) + geom_bar() + theme_minimal() + xlab("Plant Woodiness") + ylab("Number of Species") + labs(fill = "Group") + scale_fill_manual(values=c("#56BB76", "#0A2446", "#b25976"))
+dev.off()
 
 ## glopnet re-plotting 
 glop_tax <- as.character(unique(glopnet$Species))
@@ -161,7 +174,11 @@ plot(glopnet$log.Aarea, glopnet$log.Narea)
 plot(glopnet$log.Amass, glopnet$log.Nmass)
 
 ## traditional les approach tradeoff
+jpeg("les_logmass.jpeg")
 ggplot(data = glop_tax_dat, aes(x=glop_tax_dat$log.Amass, y=glop_tax_dat$log.Nmass), colour = glop_tax_dat$group) + geom_point(aes()) + scale_colour_manual(values=c("#56BB76", "#0A2446", "#b25976")) + theme_minimal() + xlab("Log A mass") + ylab("Log N mass") + labs(colour = NULL)
+dev.off()
 
 ## non-normalized induced tradeoff
+jpeg("les_logarea.jpeg")
 ggplot(data = glop_tax_dat, aes(x=glop_tax_dat$log.Aarea, y=glop_tax_dat$log.Narea), colour = glop_tax_dat$group) + geom_point(aes(color = group)) + scale_colour_manual(values=c("#56BB76", "#0A2446", "#b25976")) + theme_minimal() + xlab("Log A area") + ylab("Log N area") + labs(fill = "Group") + theme(legend.position = "none") 
+dev.off()
