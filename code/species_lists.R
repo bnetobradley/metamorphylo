@@ -1,21 +1,17 @@
-## This is code for exploring potential species sampling in a study of how morphology and metabolism are linked accross phylogeny in vascular plants
+## Code for determining species sampling strategy 
+
 library(tidyverse)
 #devtools::install_github("ropenscilabs/datastorr")
 #devtools::install_github("wcornwell/taxonlookup")
 library(taxonlookup)
 library(plyr)
 
-ubc <- read.csv("data/UBCBG_taxa.csv")
-## 12937 rows of data
-vand <- read.csv("data/VanDusen_taxa_list.csv")
-
-head(ubc)
-#taxon name // also lists genus and species seperately
-head(vand)
-# name (combo of g + sp + bonus:common name, usually in '...')
+# full garden lists
+ubc <- read.csv("data/species_list/UBCBG_taxa.csv")
+vand <- read.csv("data/species_list/VanDusen_taxa_list.csv")
 
 ### things we don't want to sample:   
-# known hybrids (denoted by "x " at begining, or " × " in middle for ubc, " x " in middle for vand)
+# known hybrids (often denoted by "x ")
 # uncertain taxa (denoted by "sp.", '?' or "+")
 
 ## remove hybrids & uncertain taxa
@@ -25,7 +21,6 @@ ubc <- ubc[!grepl("× ", ubc$TaxonName),]
 ubc <- ubc[!grepl(" × ", ubc$TaxonName),]
 ubc <- ubc[!grepl("\\?", ubc$TaxonName),]
 ubc <- ubc[grepl("plant", ubc$MaterialType),]
-ubc <- ubc[grepl("W", ubc$ProvenanceCode),]
 ubc <- ubc[!grepl("var", ubc$TaxonName),]
 ubc <- ubc[!grepl("\\'", ubc$TaxonName),]
 
@@ -42,143 +37,96 @@ vand <- vand[!grepl("\\(", vand$NAME),]
 vand <- vand[!grepl("garden origin", vand$NATIVITY),]
 vand <- vand[!grepl("Garden Origin", vand$NATIVITY),]
 
-ubc_splist <- as.vector(unique(ubc$TaxonName))
-ubc_taxlist <- lookup_table(ubc_splist, by_species = TRUE)
+## get full taxonomic listing of the remaining species
+splist <- c(as.vector(unique(ubc$TaxonName)),as.vector(unique(vand$NAME)))
+splist <- unique(splist)
+splist <- lookup_table(splist, by_species = TRUE)
 
-vand_splist <- as.vector(unique(vand$NAME))
-vand_taxlist <- lookup_table(vand_splist, by_species = TRUE)
+## summary stats
+splist$binomial <- rownames(splist)
+count(splist$family)
+count(splist$group)
+count(splist$order)
 
-## merging both lists
-all_taxa_available <- rbind(vand_taxlist, ubc_taxlist)
-count(all_taxa_available$family)
-count(all_taxa_available$group)
-count(all_taxa_available$order)
-all_taxa_available$binomial <- rownames(all_taxa_available)
-## 194 families represented 
+## check for species overlap with Zanne et al. tree 
+library(ape)
+library(geiger)
+phy <- read.tree(file = "data/Vascular_Plants_rooted.dated.tre")
+dat <- as.matrix(splist)
+splist$binomial <- gsub(" ", "_", splist$binomial)
+rownames(dat) <- splist$binomial
+td <- treedata(phy, dat)
+all_taxa_available_phy <- rownames(td$data)
+
+all_taxa_available_phy <- lookup_table(all_taxa_available_phy, by_species = TRUE)
+all_taxa_available_phy$binomial <- rownames(all_taxa_available_phy)
+
+# add source garden id
+ubc$TaxonName <- gsub(" ", "_", ubc$TaxonName)
+for (i in 1:nrow(all_taxa_available_phy)) { 
+  if(all_taxa_available_phy$binomial[i] %in% ubc$TaxonName) {
+    all_taxa_available_phy$id[i] <- "ubc"
+  } 
+  else { 
+    all_taxa_available_phy$id[i] <- "vand"
+  }
+}
+
+## summary stats
+count(all_taxa_available_phy$group) ## angio = 1594 // gymno = 110 // ferns = 38
+count(all_taxa_available_phy$family)
+
+## generating sample
+# garden_sample <- data_frame()
+# ufam <- unique(all_taxa_available_phy$family)
+# gsample <- data.frame(matrix(nrow = 206, ncol = 6))
+# colnames(gsample) <- colnames(all_taxa_available_phy)
+#for (i in 1:length(ufam)) {
+#  garden_sample <- all_taxa_available_phy %>% 
+#  dplyr::filter(family == ufam[i]) 
+#  gsample[i, ] <- (sample_n(garden_sample,size = 1))
+# }
+
+#gsample[180:188,] <- sample_n((all_taxa_available_phy %>% 
+  #          dplyr::filter(family == "Ericaceae")) , size = 9)
+#gsample[189:197,] <- sample_n((all_taxa_available_phy %>% 
+  #          dplyr::filter(family == "Pinaceae")) , size = 9)
+#gsample[198:206,] <- sample_n((all_taxa_available_phy %>% 
+ #           dplyr::filter(family == "Dryopteridaceae")) , size = 9)
+
+#gsample$binomial <- gsub(x = gsample$binomial, "_", " ")
+#vdsample <- gsample %>% dplyr::filter(id == "vand")
+#ubcsample <- gsample %>% dplyr::filter(id == "ubc")
+#write.csv(ubcsample, file = "netobradley_sample_ubc.csv", row.names = FALSE)
+#write.csv(vdsample, file = "netobradley_sample_vd.csv", row.names = FALSE)
+#write.csv(gsample, file = "netobradley_sample.csv")
 
 
-## what trait data is available?
-library(BIEN)
-spbysp_leafn <- BIEN_trait_traitbyspecies(all_taxa_available$binomial, trait = "leaf nitrogen content per leaf area")
-sub_bien <- spbysp_leafn %>% select(scrubbed_species_binomial, trait_value, project_pi)
-colnames(sub_bien) <- c("taxa", "nitrogen", "source")
-## 180 species
-spbysp_leafa <-BIEN_trait_traitbyspecies(all_taxa_available$binomial, trait = "leaf area")
-## 363 species
-spbysp_leafl <-BIEN_trait_traitbyspecies(all_taxa_available$binomial, trait = "leaf life span")
-## 78 species
+all_taxa_available_phy %>% 
+  dplyr::filter(family == "Montiaceae") %>%
+  sample_n(size = 1)
 
-scrubbed_tax_list <- lookup_table(unique(spbysp_leafn$scrubbed_species_binomial), by_species = TRUE)
-count(scrubbed_tax_list$group) ## angio = 130 // gymno = 29 // ferns = 21
-count(scrubbed_tax_list$family)
 
-##install.packages("taxize")
-#library(taxize)
-#classdat <- classification(all_taxa_available$binomial, db = "tropicos", callopts = FALSE, return_id = TRUE)
-print(all_taxa_available$binomial)
+### replacing sample
 
-## figuring out where else to pull data from
-try_scam <- read.csv("data/try_leafn_species_list.csv")
-try_scrubbed <- try_scam[(which(try_scam$AccSpeciesName %in% all_taxa_available$binomial)),]
-unique(try_scrubbed$AccSpeciesName)
-summary(try_scrubbed$Dataset)
+garden_sample <- data_frame()
+ufam <- replace$family
+gsample <- data.frame(matrix(nrow = 29, ncol = 6))
+all_ubc <- all_taxa_available_phy[all_taxa_available_phy$id == "ubc",]
+all_ubc <- as.data.frame(all_ubc)
+colnames(gsample) <- colnames(all_ubc)
+for (i in 1:29) {
+ garden_sample <- all_ubc %>% dplyr::filter(all_ubc$family == 'Ericaceae')
+sample_n(garden_sample,size = 1, replace = FALSE)
 
-## largest datasets
-## reich-oleksyn global leaf n, p database ## downloaded 2019Feb04
-## topic ## not open access 2019Feb05
-## plant volatiles ## n data is not open access 2019Feb05
-## global 15N database ## not open access 2019Feb05
-## catalonian mediterranean forest trait db ## downloaded 2019Feb05
 
-reich_dat <- read.csv("data/reich_oleksyn_dataset.csv")
-reich_dat <- reich_dat[which(reich_dat$Species %in% all_taxa_available$binomial),]
-sub_reich <- reich_dat %>% select(Species, N..mg.g, References)
-colnames(sub_reich) <- c("taxa", "nitrogen", "source")
-## 153 taxa in reich dataset for N content
-
-brot <- read.csv("data/BROT2_dat.csv")
-brot <- brot %>% filter(Trait == "LNCm")
-brot <- brot[(which(brot$Taxon %in% all_taxa_available$binomial)),]
-sub_brot <- brot %>% select(Taxon, Data, SourceID)
-colnames(sub_brot) <- c("taxa", "nitrogen", "source")
-
-glopnet <- read.csv("data/glopnet.csv")
-glopnet <- glopnet[which(glopnet$Species %in% all_taxa_available$binomial),]
-sub_glop <- glopnet %>% select(Species, log.Nmass, Dataset)
-colnames(sub_glop) <- c("taxa", "nitrogen", "source")
-
-all_data_available <- rbind(sub_glop, sub_reich, sub_brot, sub_bien)
-## data available for 272 taxa
-## nitrogen values not in same units - check for log transformation in glopnet dataset
-
-taxonlist <- as.character(unique(all_data_available$taxa))
-taxonlist <- lookup_table(taxonlist, by_species = TRUE)
-
-woody_taxa <- lookup_table(unique(woody_only$scrubbed_species_binomial), by_species = TRUE )
-## visualizing species sample spread 
-library(ggplot2)
-dev.off()
-jpeg("hist_order_tax.jpeg")
-ggplot(data = taxonlist, aes(x = group, fill = order)) + geom_histogram(stat = "count") + theme_minimal() + xlab("Group") + ylab("Number of Species")
-dev.off()
-
-jpeg("hist_family_tax.jpeg")
-ggplot(data = taxonlist, aes(x = family, fill = family)) + geom_histogram(stat = "count") + theme_minimal() + theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(),) 
-dev.off()
-
-## getting other traits
-all_data_available$taxa <- as.character(all_data_available$taxa)
-traits <- BIEN_trait_list()
-traits <- traits$trait_name
-traits <- as.character(traits)
-
-## no data for our taxa on this 
-## min_l_width <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = "minimum leaf width")
-
-## histogram of leaf area by taxa plot
-l_area <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = "leaf area")
-l_area$trait_value <- as.numeric(l_area$trait_value)
-l_area$scrubbed_species_binomial <- as.factor(l_area$scrubbed_species_binomial)
-l_area <- l_area %>% group_by(scrubbed_species_binomial) %>% dplyr::summarise(mean(trait_value))
-l_area$lookup <- lookup_table(as.character(l_area$scrubbed_species_binomial), by_species = TRUE)
-
-jpeg("hist_larea.jpeg")
-ggplot(data = l_area, aes(x=l_area$`mean(trait_value)`, fill = lookup[,4])) + geom_histogram(binwidth = 5000) + theme_minimal() + xlab("Leaf Area (mm^2)") + ylab("Number of Species") + labs(fill = "Group")  + scale_fill_manual(values=c("#56BB76", "#0A2446", "#b25976"))
-dev.off()
-
-## histogram of leaf lifespan by taxa plot
-l_lifespan <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = "leaf life span")
-l_lifespan$trait_value <- as.numeric(l_lifespan$trait_value)
-l_lifespan <- l_lifespan %>% group_by(scrubbed_species_binomial) %>% dplyr::summarise(mean(trait_value))
-l_lifespan$lookup <- lookup_table(as.character(l_lifespan$scrubbed_species_binomial), by_species = TRUE)
-
-jpeg("hist_lifespan.jpeg")
-ggplot(data = l_lifespan, aes(x=l_lifespan$`mean(trait_value)`, fill = lookup[,4])) + geom_histogram(binwidth = 12) + theme_minimal() + xlab("Leaf Lifespan (months)") + ylab("Number of Species") + labs(fill = "Group")  + scale_fill_manual(values=c("#56BB76", "#0A2446", "#b25976"))
-dev.off()
-
-## # of woody plants by taxa plot
-l_woody <- BIEN_trait_traitbyspecies(all_data_available$taxa, trait = "whole plant woodiness")
-l_woody <- l_woody %>% group_by(scrubbed_species_binomial) %>% dplyr::summarise(first(trait_value))
-l_woody$lookup <- lookup_table(as.character(l_woody$scrubbed_species_binomial), by_species = TRUE)
-
-jpeg("hist_woodiness.jpeg")
-ggplot(data = l_woody, aes(x=l_woody$`first(trait_value)`, fill = lookup[,4])) + geom_bar() + theme_minimal() + xlab("Plant Woodiness") + ylab("Number of Species") + labs(fill = "Group") + scale_fill_manual(values=c("#56BB76", "#0A2446", "#b25976"))
-dev.off()
-
-## glopnet re-plotting 
-glop_tax <- as.character(unique(glopnet$Species))
-glop_tax <- lookup_table(glop_tax, by_species = TRUE)
-glop_tax$species <- rownames(glop_tax)
-glop_tax_dat <- inner_join(glopnet, glop_tax, by = c("Species" = "species"))
-plot(glopnet$log.Aarea, glopnet$log.Narea)
-plot(glopnet$log.Amass, glopnet$log.Nmass)
-
-## traditional les approach tradeoff
-jpeg("les_logmass.jpeg")
-ggplot(data = glop_tax_dat, aes(x=glop_tax_dat$log.Amass, y=glop_tax_dat$log.Nmass), colour = glop_tax_dat$group) + geom_point(aes()) + scale_colour_manual(values=c("#56BB76", "#0A2446", "#b25976")) + theme_minimal() + xlab("Log A mass") + ylab("Log N mass") + labs(colour = NULL)
-dev.off()
-
-## non-normalized induced tradeoff
-jpeg("les_logarea.jpeg")
-ggplot(data = glop_tax_dat, aes(x=glop_tax_dat$log.Aarea, y=glop_tax_dat$log.Narea), colour = glop_tax_dat$group) + geom_point(aes(color = group)) + scale_colour_manual(values=c("#56BB76", "#0A2446", "#b25976")) + theme_minimal() + xlab("Log A area") + ylab("Log N area") + labs(fill = "Group") + theme(legend.position = "none") 
-dev.off()
+garden_sample <- data_frame()
+ufam <- replace$family
+gsample <- data.frame(matrix(nrow = 29, ncol = 6))
+all_vd <- all_taxa_available_phy[all_taxa_available_phy$id == "vand",]
+all_vd <- as.data.frame(all_vd)
+colnames(gsample) <- colnames(all_vd)
+for (i in 1:29) {
+  garden_sample <- all_ubc %>% dplyr::filter(all_ubc$family == 'Ericaceae')
+  sample_n(garden_sample,size = 1, replace = FALSE)
+  
