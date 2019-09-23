@@ -1,7 +1,7 @@
 ## sourcing from read licor 6800 script for appropriate file formatting
-source('code/read_licor.R')
-source('code/recalculate_licor_racir.R')
-source('code/correct_racir.R')
+source('R/read_licor.R')
+source('R/recalculate_licor_racir.R')
+source('R/correct_racir.R')
 library(ggplot2)
 library(dplyr)
 

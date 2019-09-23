@@ -34,4 +34,4 @@ recalc_licor68 <- . %>%
    
    message("Constant values printed in the header of the licor output file are ignored in this recalculation.
 This means that the values for deltaTw (0), fT1 (1), fT2 (0) or fTeb (0) are set as denoted in brackets.")
-  )
+  ) 

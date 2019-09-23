@@ -1,6 +1,6 @@
 library(dplyr)
 
-source(file = "code/read_licor.R")
+source(file = "R/read_licor.R")
 
 correct_racir <- function(empty, file) {
   raci <- empty
