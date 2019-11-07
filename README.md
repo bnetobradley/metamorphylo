@@ -1,7 +1,7 @@
 ---
 title: "Metamorphylo"
-author: "B.M. Neto-Bradley"
-output: html_document
+author: "B.M. Neto-Bradley, C.D. Muir, J. Whitton & M.W. Pennell"
+output: html_notebook
 ---
 <h2> DATA </h2>
 <h3>[This github repository](https://github.com/bnetobradley/metamorphylo) contains the raw data and code for analyses used in *B.M. Neto-Bradley*'s MSc. Thesis.</h3>
@@ -47,10 +47,17 @@ These measurements were done at bla bla labs in bla bla, during September 2019. 
 <h4> In the __/R__ folder of this repository, there are multiple sections of code required in the mental gymnastics that are cleaning and manipulating these datasets. Below is a roadmap to these gymnastics. </h4>
 
 <h3>1. __Cleaning: read the RACiR data__ </h3>
+<h4> As mentioned above (in the description of the RACiR data,) the LICOR Instrument automatically generates (both) a .txt and .xls file for each set of measurements taken. Both the .txt and .xls file are in non-tidy format, and need some specific cleaning up as they are read into R. We have written a function __read_li68()__ that cleans this up by chopping out the non-tidy metadata sections from the dataframe in R (these metadata are safe and untouched in the original data files.) In this section we compile all of the txt files into on dataframe - where individual measurements are identifiable via a unique ID. </h4>
+
 <h3>2. __Cleaning: correct the RACiR data by leaf area in chamber__</h3>
+<h4> Now that the data is compiled into one place, in a readable format - we need to correct measurements that were taken on leaves smaller than the full chamber size, i.e. the LICOR software calculates a series of photosynthetic related variables from a handful of gas exchange measurements, while assuming that the amount of leaf photosynthetic area in the chamber is equal to the full size of the chamber - due to irregular or small leaf shapes this is often not true. In order to correct this, we need to enter the true amount of leaf area in the chamber and then recalculate the derived photosynthetic related variables based on this leaf area.</h4>
+<h4> true leaf area in chamber was estimated by placing a circle (either 2cm^2 or 6cm^2) on scanned leaves 3 times, to estimate the approximate area that was inside the chamber. In this section we average these estimates for each leaf measured, and replace the assumed full chamber value (unless the chamber was indeed full.) We then use our function __recalc_licor68()__ to recalculate the derived photosynthetic values.
+</h4>
+
 <h3>3. __Cleaning: correct the RACiR data by CO2 lag empty/data__ </h3>
 <h3>4. __Cleaning: fit Parameters to the clean and corrected RACiR data__ </h3>
 <h3>5. __Analysis: divergence__ </h3>
 <h3>6. __Analysis: PICs__ </h3>
 <h3>7. __Analysis: PGLS__ </h3>
 
+:herb:
