@@ -19,7 +19,7 @@ number <- leafmetab %>% group_by(binomial) %>% tally()
 leafmetab_clean <- inner_join(leafmetab_clean, number)
 
 leafmorph$thickmean <- (leafmorph$thick_1+leafmorph$thick_2+leafmorph$thick_3)/3
-leafmorph_clean <- leafmorph %>% group_by(binomial) %>% summarise(thick_mean = mean(thickmean), thick_sd = sd(thickmean), area_mean = mean(leaf_area_imagej), log_area_mean = mean(log(leaf_area_imagej)), area_sd = sd(leaf_area_imagej), log_area_sd = sd(log(leaf_area_imagej)), freshmass_mean = mean(fresh_mass), freshmass_sd = sd(fresh_mass), drymass_mean = mean(dry_mass), drymass_sd = sd(dry_mass), log_freshmass_mean = mean(log(fresh_mass)), log_freshmass_sd = sd(log(fresh_mass)), sla_mean = mean(log(leaf_area_imagej/fresh_mass)), sla_sd = sd(log(leaf_area_imagej/fresh_mass)))
+leafmorph_clean <- leafmorph %>% group_by(binomial) %>% summarise(thick_mean = mean(thickmean), thick_sd = sd(thickmean), area_mean = mean(leaf_area_imagej), log_area_mean = mean(log(leaf_area_imagej)), area_sd = sd(leaf_area_imagej), log_area_sd = sd(log(leaf_area_imagej)), freshmass_mean = mean(fresh_mass), freshmass_sd = sd(fresh_mass), drymass_mean = mean(dry_mass), drymass_sd = sd(dry_mass), log_freshmass_mean = mean(log(fresh_mass)), log_freshmass_sd = sd(log(fresh_mass)), lma_mean = mean((fresh_mass/leaf_area_imagej)), lma_sd = sd((fresh_mass/leaf_area_imagej)))
 
 ## remove Rhododendron campylocarpum
 which(leafmetab_clean$binomial == "Rhododendron_campylocarpum")
