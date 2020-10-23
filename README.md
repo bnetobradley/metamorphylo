@@ -38,7 +38,7 @@ Once the leaf tissues were dried, these were sent off for chemical analysis for 
 </h5>
 
 <h5> Time & Place: 
-These measurements were done at bla bla labs in bla bla, during September 2019. </h5>
+These measurements were done at the Analytical Chemical Services Laboratory (at the BC Ministry of Environment and Climate Change Strategy), during September 2019. </h5>
 
 <h2> CODE </h2>
 <h4> In the /R folder of this repository, there are multiple sections of code required in the mental gymnastics that are cleaning and manipulating these datasets. Below is a roadmap to these gymnastics. </h4>
@@ -58,6 +58,4 @@ ii) fit a linear model to the empty curves and subtract this from the data curve
 iii) clean up the non-linear ends of the data curves </h4>
 
 <h3>4. Cleaning: fit Parameters to the clean and corrected RACiR data </h3>
-<h3>5. Analysis: divergence </h3>
-<h3>6. Analysis: PICs </h3>
-<h3>7. Analysis: PGLS </h3>
+<h4> Curves are fit using the plantecophys package. </h4>
